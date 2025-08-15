@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial News API | Real-time Financial News & Sentiment Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        editor: {
+                            background: '#1e1e1e',
+                            foreground: '#d4d4d4',
+                            selection: '#264f78',
+                            function: '#4EC9B0',
+                            keyword: '#569CD6',
+                            string: '#CE9178',
+                            comment: '#6A9955',
+                            variable: '#9CDCFE',
+                        },
+                        accent: '#4EC9B0',
+                        primary: '#569CD6',
+                        secondary: '#CE9178'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'terminal-cursor': 'blink 1s infinite',
+                        'gradient-x': 'gradient-x 3s ease infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' }
+                        },
+                        'blink': {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0 }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        
+        .editor-bg {
+            background-color: #1e1e1e;
+        }
+        
+        .editor-header {
+            background-color: #252526;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        
+        .editor-tab {
+            background-color: #2d2d2d;
+            border-right: 1px solid #3c3c3c;
+        }
+        
+        .editor-tab-active {
+            background-color: #1e1e1e;
+            border-top: 1px solid #4EC9B0;
+        }
+        
+        .terminal-glow {
+            box-shadow: 0 0 15px rgba(78, 201, 176, 0.2);
+        }
+        
+        .code-keyword {
+            color: #569CD6;
+        }
+        
+        .code-function {
+            color: #4EC9B0;
+        }
+        
+        .code-string {
+            color: #CE9178;
+        }
+        
+        .code-comment {
+            color: #6A9955;
+        }
+        
+        .code-variable {
+            color: #9CDCFE;
+        }
+        
+        .status-indicator {
+            position: relative;
+        }
+        
+        .status-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            transform: translate(-50%, -50%);
+            animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        @keyframes ping {
+            75%, 100% {
+                transform: translate(-50%, -50%) scale(2.5);
+                opacity: 0;
+            }
+        }
+        
+        .feature-icon-container {
+            background: linear-gradient(135deg, rgba(78, 201, 176, 0.1) 0%, rgba(86, 156, 214, 0.1) 100%);
+            border: 1px solid rgba(78, 201, 176, 0.2);
+        }
+        
+        .api-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #252526;
+            border: 1px solid #3c3c3c;
+        }
+        
+        .api-card:hover {
+            transform: translateY(-5px);
+            border-color: #4EC9B0;
+        }
+        
+        .pricing-card {
+            transition: all 0.3s ease;
+            background: #252526;
+            border: 1px solid #3c3c3c;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            border-color: #4EC9B0;
+        }
+        
+        .pricing-highlight {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pricing-highlight::before {
+            content: 'POPULAR';
+            position: absolute;
+            top: 15px;
+            right: -35px;
+            width: 150px;
+            padding: 2px 0;
+            background: #4EC9B0;
+            color: #1e1e1e;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            transform: rotate(45deg);
+            font-family: 'Fira Code', monospace;
+        }
+        
+        .news-card {
+            background: linear-gradient(145deg, #252526, #1e1e1e);
+            border: 1px solid #3c3c3c;
+            transition: all 0.3s ease;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-3px);
+            border-color: #569CD6;
+        }
+        
+        .sentiment-positive {
+            background: rgba(46, 160, 67, 0.15);
+            color: #6A9955;
+        }
+        
+        .sentiment-negative {
+            background: rgba(190, 80, 70, 0.15);
+            color: #CE9178;
+        }
+        
+        .sentiment-neutral {
+            background: rgba(106, 153, 85, 0.15);
+            color: #9CDCFE;
+        }
+    </style>
+</head>
+<body class="editor-bg font-sans antialiased">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 editor-header border-b border-gray-800 backdrop-blur-md">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-newspaper text-accent text-xl mr-2"></i>
+                        <span class="text-xl font-bold">Financial<span class="text-accent">News</span>API</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-6">
+                            <a href="#features" class="px-3 py-2 rounded-md text-sm font-medium hover:text-accent transition">Features</a>
+                            <a href="#how-it-works" class="px-3 py-2 rounded-md text-sm font-medium hover:text-accent transition">How It Works</a>
+                            <a href="#pricing" class="px-3 py-2 rounded-md text-sm font-medium hover:text-accent transition">Pricing</a>
+                            <a href="#docs" class="px-3 py-2 rounded-md text-sm font-medium hover:text-accent transition">Documentation</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="mr-4 flex items-center text-sm">
+                        <span class="status-indicator w-2 h-2 bg-accent rounded-full mr-2"></span>
+                        <span>API Status: <span class="font-mono text-accent">Operational</span></span>
+                    </div>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-800">
+                        <i class="fas fa-moon text-yellow-300"></i>
+                    </button>
+                    <a href="#" class="ml-4 bg-accent hover:bg-[#3db39e] text-editor-background font-bold py-2 px-4 rounded-md transition">
+                        Get API Key
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-24 pb-16 md:pt-32 md:pb-24">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-8">
+                        <div class="inline-flex items-center space-x-2 bg-gray-800 rounded-full px-4 py-2 border border-gray-700">
+                            <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
+                            <span class="text-sm font-medium">Real-time financial news & sentiment analysis</span>
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold leading-tight">
+                            Financial News API for
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">Developers & Traders</span>
+                        </h1>
+                        <p class="text-xl text-gray-400 max-w-xl">
+                            Access real-time financial news, historical archives, and AI-powered sentiment analysis 
+                            through a single, developer-friendly API endpoint.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="#" class="bg-accent hover:bg-[#3db39e] text-editor-background font-bold py-3 px-8 rounded-md text-lg transition">
+                                Get Started
+                            </a>
+                            <a href="#playground" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-md text-lg transition">
+                                Try Playground
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="editor-bg rounded-xl p-6 border border-gray-700 terminal-glow">
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span class="text-xs text-gray-400 ml-4 font-mono">GET /v1/news</span>
+                            </div>
+                            <div class="font-mono text-sm space-y-2">
+                                <div class="code-comment">// Fetch latest financial news with sentiment</div>
+                                <div class="text-white"><span class="code-keyword">const</span> <span class="code-variable">response</span> = <span class="code-keyword">await</span> <span class="code-function">fetch</span>(</div>
+                                <div class="ml-4 text-white"><span class="code-string">'https://api.financial-news-api.org/v1/news?symbols=AAPL,MSFT&limit=5'</span>,</div>
+                                <div class="ml-4 text-white">{</div>
+                                <div class="ml-8 text-white"><span class="code-variable">headers</span>: {</div>
+                                <div class="ml-12 text-white"><span class="code-string">'Authorization'</span>: <span class="code-string">'Bearer YOUR_API_KEY'</span></div>
+                                <div class="ml-8 text-white">}</div>
+                                <div class="ml-4 text-white">}</div>
+                                <div class="text-white">);</div>
+                                <div class="code-comment mt-4">// Response includes sentiment scores, entities, and sources</div>
+                                <div class="flex items-center mt-4 text-gray-400">
+                                    <span class="font-mono">Response time: 12ms</span>
+                                    <span class="ml-4 animate-terminal-cursor">|</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Powerful News Intelligence</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Comprehensive financial news coverage with AI-powered analysis for trading algorithms, 
+                    research, and market monitoring
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Feature 1 -->
+                <div class="api-card rounded-xl p-6">
+                    <div class="feature-icon-container w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-bolt text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Real-time Streams</h3>
+                    <p class="text-gray-400 mb-4">WebSocket streams for instantaneous news delivery as events happen globally</p>
+                    <ul class="text-sm text-gray-300 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Millisecond latency</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Event-driven architecture</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Automatic reconnection</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="api-card rounded-xl p-6">
+                    <div class="feature-icon-container w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-brain text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Sentiment Analysis</h3>
+                    <p class="text-gray-400 mb-4">AI-powered sentiment scoring for stocks, cryptocurrencies, and market sectors</p>
+                    <ul class="text-sm text-gray-300 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Entity-level sentiment</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Historical sentiment trends</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Customizable models</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="api-card rounded-xl p-6">
+                    <div class="feature-icon-container w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-database text-secondary text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Historical Archives</h3>
+                    <p class="text-gray-400 mb-4">Access 10+ years of financial news with complete metadata and context</p>
+                    <ul class="text-sm text-gray-300 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Advanced search filters</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Time-based pagination</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Bulk export options</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="api-card rounded-xl p-6">
+                    <div class="feature-icon-container w-12 h-12 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-filter text-accent text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Advanced Filtering</h3>
+                    <p class="text-gray-400 mb-4">Precise control over news sources, topics, symbols, and relevance</p>
+                    <ul class="text-sm text-gray-300 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Symbol/ticker filters</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Category and source filters</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-accent mr-2 mt-1"></i>
+                            <span>Relevance scoring</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-20 bg-gray-900">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Integrate financial news into your applications in minutes with our straightforward API
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+                <div>
+                    <div class="editor-bg rounded-xl border border-gray-700 overflow-hidden mb-8">
+                        <div class="editor-header px-4 py-3 flex items-center">
+                            <div class="flex space-x-1 mr-4">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div class="text-sm font-mono text-gray-400">news_api_integration.js</div>
+                        </div>
+                        <div class="p-6 font-mono text-sm">
+                            <div class="code-comment">// Install SDK</div>
+                            <div class="text-gray-400">$ npm install @financial-news/sdk</div>
+                            <br>
+                            <div class="code-comment">// Initialize client</div>
+                            <div class="text-white"><span class="code-keyword">import</span> FinancialNews <span class="code-keyword">from</span> <span class="code-string">'@financial-news/sdk'</span>;</div>
+                            <div class="text-white"><span class="code-keyword">const</span> <span class="code-variable">client</span> = <span class="code-keyword">new</span> <span class="code-function">FinancialNews</span>({</div>
+                            <div class="ml-4 text-white"><span class="code-variable">apiKey</span>: <span class="code-string">'YOUR_API_KEY'</span></div>
+                            <div class="text-white">});</div>
+                            <br>
+                            <div class="code-comment">// Get latest news with sentiment</div>
+                            <div class="text-white"><span class="code-keyword">const</span> <span class="code-variable">news</span> = <span class="code-keyword">await</span> <span class="code-variable">client</span>.<span class="code-function">getNews</span>({</div>
+                            <div class="ml-4 text-white"><span class="code-variable">symbols</span>: [<span class="code-string">'AAPL'</span>, <span class="code-string">'MSFT'</span>],</div>
+                            <div class="ml-4 text-white"><span class="code-variable">limit</span>: <span class="text-amber-300">5</span>,</div>
+                            <div class="ml-4 text-white"><span class="code-variable">includeSentiment</span>: <span class="code-keyword">true</span></div>
+                            <div class="text-white">});</div>
+                            <br>
+                            <div class="code-comment">// Process sentiment data</div>
+                            <div class="text-white"><span class="code-variable">news</span>.<span class="code-variable">articles</span>.<span class="code-function">forEach</span>(<span class="code-variable">article</span> => {</div>
+                            <div class="ml-4 text-white"><span class="code-function">console</span>.<span class="code-function">log</span>(<span class="code-string">`</span><span class="code-string">${article.title} - Sentiment: </span><span class="code-string">${article.sentiment.score}</span><span class="code-string">`</span>);</div>
+                            <div class="text-white">});</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4">
+                        <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center transition">
+                            <i class="fab fa-js text-yellow-300 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-medium">JavaScript SDK</div>
+                                <div class="text-sm text-gray-400">v2.4.0</div>
+                            </div>
+                        </a>
+                        <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center transition">
+                            <i class="fab fa-python text-blue-400 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-medium">Python SDK</div>
+                                <div class="text-sm text-gray-400">v3.1.0</div>
+                            </div>
+                        </a>
+                        <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center transition">
+                            <i class="fas fa-code text-accent text-xl mr-3"></i>
+                            <div>
+                                <div class="font-medium">REST API</div>
+                                <div class="text-sm text-gray-400">v1.3</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-3xl font-bold mb-6">News Intelligence Pipeline</h3>
+                    <p class="text-gray-300 mb-8">
+                        Our infrastructure processes millions of news articles daily from global sources, 
+                        extracting entities, sentiment, and market impact indicators.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-accent font-bold">1</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">News Collection</h4>
+                                <p class="text-gray-400">Real-time collection from 500+ global financial news sources in 12 languages</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-accent font-bold">2</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">Natural Language Processing</h4>
+                                <p class="text-gray-400">Entity recognition, topic classification, and semantic analysis</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-accent font-bold">3</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">Sentiment Analysis</h4>
+                                <p class="text-gray-400">AI models assign sentiment scores to companies, stocks, and market topics</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="text-accent font-bold">4</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-2">API Delivery</h4>
+                                <p class="text-gray-400">Structured JSON delivery via REST and WebSocket with millisecond latency</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 bg-gray-800 rounded-xl p-6 border border-gray-700">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <i class="fas fa-chart-line text-accent"></i>
+                            <h4 class="font-bold">Real-world Applications</h4>
+                        </div>
+                        <ul class="space-y-2 text-gray-300">
+                            <li class="flex items-start">
+                                <i class="fas fa-caret-right text-accent mr-2 mt-1"></i>
+                                <span>Algorithmic trading systems</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-caret-right text-accent mr-2 mt-1"></i>
+                                <span>Market sentiment dashboards</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-caret-right text-accent mr-2 mt-1"></i>
+                                <span>Financial research platforms</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-caret-right text-accent mr-2 mt-1"></i>
+                                <span>Portfolio risk analysis tools</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- News Showcase -->
+    <section class="py-20 editor-bg">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">News Intelligence in Action</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Real examples showing how our API structures and enriches financial news
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- News Card 1 -->
+                <div class="news-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-xs font-semibold bg-gray-800 px-2 py-1 rounded">AAPL</div>
+                        <div class="sentiment-positive px-2 py-1 rounded text-xs">Positive (0.82)</div>
+                    </div>
+                    <h3 class="font-bold mb-3">Apple Announces Record Quarterly Earnings</h3>
+                    <p class="text-gray-400 text-sm mb-4">Apple reported Q4 earnings that beat analyst expectations, driven by strong iPhone sales and services growth.</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>TechCrunch</span>
+                        <span>2 hours ago</span>
+                    </div>
+                </div>
+                
+                <!-- News Card 2 -->
+                <div class="news-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-xs font-semibold bg-gray-800 px-2 py-1 rounded">MSFT</div>
+                        <div class="sentiment-neutral px-2 py-1 rounded text-xs">Neutral (0.12)</div>
+                    </div>
+                    <h3 class="font-bold mb-3">Microsoft Cloud Growth Slows Amid Economic Uncertainty</h3>
+                    <p class="text-gray-400 text-sm mb-4">Microsoft Azure growth slowed to 35% in Q3 as enterprise customers reduced cloud spending.</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>Bloomberg</span>
+                        <span>5 hours ago</span>
+                    </div>
+                </div>
+                
+                <!-- News Card 3 -->
+                <div class="news-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-xs font-semibold bg-gray-800 px-2 py-1 rounded">BTC</div>
+                        <div class="sentiment-negative px-2 py-1 rounded text-xs">Negative (-0.78)</div>
+                    </div>
+                    <h3 class="font-bold mb-3">Regulatory Crackdown Causes Bitcoin to Plunge 15%</h3>
+                    <p class="text-gray-400 text-sm mb-4">Bitcoin fell sharply after the SEC announced stricter crypto regulations for exchanges and custodians.</p>
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>CoinDesk</span>
+                        <span>8 hours ago</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 text-center">
+                <a href="#" class="inline-flex items-center text-accent font-medium">
+                    Explore News Explorer
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 bg-gray-900">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Choose the plan that fits your needs. Scale as you grow.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Developer Tier -->
+                <div class="pricing-card rounded-xl p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2">Developer</h3>
+                        <div class="mb-4">
+                            <span class="text-5xl font-bold">$0</span>
+                            <span class="text-gray-400">/month</span>
+                        </div>
+                        <p class="text-gray-300">Perfect for testing and personal projects</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>100 API calls/day</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Basic news access</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Community support</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Limited historical data</span>
+                        </div>
+                    </div>
+                    
+                    <a href="#" class="block w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-lg text-center transition">
+                        Get Started
+                    </a>
+                </div>
+                
+                <!-- Professional Tier -->
+                <div class="pricing-card pricing-highlight rounded-xl p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2">Professional</h3>
+                        <div class="mb-4">
+                            <span class="text-5xl font-bold">$99</span>
+                            <span class="text-gray-400">/month</span>
+                        </div>
+                        <p class="text-gray-300">For startups and growing applications</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>10,000 API calls/month</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Full sentiment analysis</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>WebSocket access</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>5 years historical data</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Priority support</span>
+                        </div>
+                    </div>
+                    
+                    <a href="#" class="block w-full bg-accent hover:bg-[#3db39e] text-editor-background font-bold py-3 rounded-lg text-center transition">
+                        Start Free Trial
+                    </a>
+                </div>
+                
+                <!-- Enterprise Tier -->
+                <div class="pricing-card rounded-xl p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2">Enterprise</h3>
+                        <div class="mb-4">
+                            <span class="text-5xl font-bold">Custom</span>
+                        </div>
+                        <p class="text-gray-300">For institutions and high-volume applications</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Unlimited API calls</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Advanced sentiment models</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Full historical archive</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>Dedicated infrastructure</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-accent"></i>
+                            <span>24/7 technical support</span>
+                        </div>
+                    </div>
+                    
+                    <a href="#" class="block w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-lg text-center transition">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation -->
+    <section id="docs" class="py-20 editor-bg">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Comprehensive Documentation</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Everything you need to integrate financial news into your applications
+                </p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <div class="editor-bg rounded-xl border border-gray-700 overflow-hidden">
+                        <div class="editor-header px-4 py-3 flex items-center">
+                            <div class="flex space-x-1 mr-4">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div class="text-sm font-mono text-gray-400">API Reference</div>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-6">
+                                <div>
+                                    <h4 class="font-bold mb-3">Endpoints</h4>
+                                    <ul class="space-y-2">
+                                        <li>
+                                            <a href="#" class="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <span class="font-mono">GET /v1/news</span>
+                                                <i class="fas fa-chevron-right text-gray-400"></i>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <span class="font-mono">GET /v1/news/{id}</span>
+                                                <i class="fas fa-chevron-right text-gray-400"></i>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <span class="font-mono">GET /v1/sentiment</span>
+                                                <i class="fas fa-chevron-right text-gray-400"></i>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <span class="font-mono">GET /v1/sources</span>
+                                                <i class="fas fa-chevron-right text-gray-400"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-bold mb-3">Guides</h4>
+                                    <ul class="space-y-2">
+                                        <li>
+                                            <a href="#" class="flex items-center p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <i class="fas fa-book mr-3 text-accent"></i>
+                                                <span>Getting Started</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="flex items-center p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <i class="fas fa-plug mr-3 text-primary"></i>
+                                                <span>Real-time WebSocket Integration</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="flex items-center p-3 bg-gray-800 hover:bg-gray-700 rounded-lg">
+                                                <i class="fas fa-chart-line mr-3 text-secondary"></i>
+                                                <span>Sentiment Analysis for Trading</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-2xl font-bold mb-6">Developer Resources</h3>
+                        <p class="text-gray-400 mb-8">
+                            Access our complete set of resources to accelerate your integration
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-8">
+                            <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center">
+                                <i class="fab fa-github text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">GitHub Repository</div>
+                                    <div class="text-sm text-gray-400">SDKs & Examples</div>
+                                </div>
+                            </a>
+                            <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center">
+                                <i class="fas fa-code text-accent text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">API Playground</div>
+                                    <div class="text-sm text-gray-400">Test endpoints</div>
+                                </div>
+                            </a>
+                            <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center">
+                                <i class="fas fa-book text-primary text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">Swagger Docs</div>
+                                    <div class="text-sm text-gray-400">Interactive API</div>
+                                </div>
+                            </a>
+                            <a href="#" class="bg-gray-800 hover:bg-gray-700 rounded-lg p-4 flex items-center">
+                                <i class="fab fa-discord text-indigo-500 text-xl mr-3"></i>
+                                <div>
+                                    <div class="font-medium">Community</div>
+                                    <div class="text-sm text-gray-400">Join Discord</div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                            <div class="flex items-start mb-4">
+                                <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                                    <i class="fas fa-user text-accent"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold">Michael Johnson</div>
+                                    <div class="text-gray-400 text-sm">CTO, Custom Logic</div>
+                                </div>
+                            </div>
+                            <p class="text-gray-300 italic">
+                                "We built this API to solve our own needs for reliable financial news data. 
+                                Now we're excited to share it with developers worldwide. Our focus is on 
+                                accuracy, speed, and developer experience."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 bg-gradient-to-r from-gray-900 to-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Start Integrating Financial News Today</h2>
+                <p class="text-gray-300 mb-8 max-w-2xl mx-auto">
+                    Join thousands of developers and traders using our API to power their applications
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="#" class="bg-accent hover:bg-[#3db39e] text-editor-background font-bold py-3 px-8 rounded-md text-lg transition">
+                        Get API Key
+                    </a>
+                    <a href="#" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-md text-lg transition">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 pt-16 pb-8">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-newspaper text-accent text-xl mr-2"></i>
+                        <span class="text-xl font-bold">Financial<span class="text-accent">News</span>API</span>
+                    </div>
+                    <p class="text-gray-400 mb-6">
+                        Real-time financial news and sentiment analysis API for developers and traders.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-accent transition">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-accent transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-accent transition">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Product</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#" class="hover:text-accent transition">Features</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Pricing</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Documentation</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Status</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Roadmap</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Company</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="https://custom-logic.co.za" class="hover:text-accent transition">Custom Logic</a></li>
+                        <li><a href="#" class="hover:text-accent transition">About Us</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Careers</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Legal</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#" class="hover:text-accent transition">Terms of Service</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-accent transition">GDPR Compliance</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Security</a></li>
+                        <li><a href="#" class="hover:text-accent transition">Compliance</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-gray-800">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-gray-500 text-sm">
+                        &copy; 2024 Financial News API. A product of <a href="https://custom-logic.co.za" class="text-accent hover:underline">Custom Logic</a>. All rights reserved.
+                    </p>
+                    <div class="mt-4 md:mt-0 flex items-center space-x-4 text-sm text-gray-500">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                            <span>99.9% Uptime</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-shield-alt text-accent"></i>
+                            <span>Bank-Level Security</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', () => {
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    themeToggle.innerHTML = '<i class="fas fa-moon text-gray-700"></i>';
+                    localStorage.theme = 'light';
+                } else {
+                    html.classList.add('dark');
+                    themeToggle.innerHTML = '<i class="fas fa-sun text-yellow-300"></i>';
+                    localStorage.theme = 'dark';
+                }
+            });
+            
+            // Set initial theme based on user preference
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                themeToggle.innerHTML = '<i class="fas fa-sun text-yellow-300"></i>';
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeToggle.innerHTML = '<i class="fas fa-moon text-gray-700"></i>';
+            }
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+            
+            // Simulate API status changes
+            setInterval(() => {
+                const statusIndicator = document.querySelector('.status-indicator');
+                const statusText = document.querySelector('.font-mono.text-accent');
+                
+                // Random status change simulation
+                if (Math.random() > 0.9) {
+                    statusIndicator.classList.remove('bg-accent');
+                    statusIndicator.classList.add('bg-yellow-500');
+                    statusText.textContent = "Degraded";
+                    statusText.classList.remove('text-accent');
+                    statusText.classList.add('text-yellow-500');
+                } else {
+                    statusIndicator.classList.remove('bg-yellow-500');
+                    statusIndicator.classList.add('bg-accent');
+                    statusText.textContent = "Operational";
+                    statusText.classList.remove('text-yellow-500');
+                    statusText.classList.add('text-accent');
+                }
+            }, 30000);
+            
+            // Add loading states to buttons
+            document.querySelectorAll('a[href="#"]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Loading...';
+                    this.disabled = true;
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
